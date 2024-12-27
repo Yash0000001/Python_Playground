@@ -2,7 +2,7 @@ import "../globals.css";
 import { Providers } from "./Providers";
 
 export const metadata = {
-  title: "Liveblocks",
+  title: "Python_Playground",
 };
 
 export default function RootLayout({

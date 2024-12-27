@@ -11,12 +11,85 @@ import { useRoom, useSelf } from "@liveblocks/react/suspense";
 import styles from "./CollaborativeEditor.module.css";
 import { Avatars } from "@/components/Avatars";
 import { Toolbar } from "@/components/Toolbar";
+import "./splitView.css"
 
 // Collaborative code editor with undo/redo, live cursors, and live avatars
 export function CollaborativeEditor() {
+  const [text, setText] = useState("");
   const room = useRoom();
   const [element, setElement] = useState<HTMLElement>();
   const [yUndoManager, setYUndoManager] = useState<Y.UndoManager>();
+  const [output, setOutput] = useState();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [leftWidth, setLeftWidth] = useState(400); // Initial width of the left pane
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleMouseDown = () => {
+    setIsResizing(true);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = e.clientX;
+      if (newWidth > 100 && newWidth < window.innerWidth - 100) {
+        setLeftWidth(newWidth);
+      }
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsResizing(false);
+  };
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    } else {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
+  async function handleSubmitCode(code: string) {
+    try {
+      // Replace with your API endpoint
+      setLoading(true);
+      const apiUrl = "";
+
+      // Send POST request using fetch
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+        }),
+      });
+
+      // Check if response is OK
+      if (!response.ok) {
+        throw new Error("Failed to fetch API response.");
+      }
+
+      // Parse and return the response JSON
+      const data = await response.json();
+      console.log("API Response:", data);
+      setOutput(data);
+    } catch (error) {
+      console.error("Error sending code:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }
+
 
   // Get user info from Liveblocks authentication endpoint
   const userInfo = useSelf((me) => me.info);
@@ -60,7 +133,13 @@ export function CollaborativeEditor() {
         yCollab(ytext, provider.awareness, { undoManager }),
       ],
     });
+    const handleDocChange = () => {
+      const currentText = ytext.toString();
+      console.log("Current Text:", currentText); // Check console output//
+      setText(currentText); // Update state
+    };
 
+    ytext.observe(handleDocChange);
     // Attach CodeMirror to element
     view = new EditorView({
       state,
@@ -71,18 +150,36 @@ export function CollaborativeEditor() {
       ydoc?.destroy();
       provider?.destroy();
       view?.destroy();
+      ytext.unobserve(handleDocChange);
     };
   }, [element, room, userInfo]);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.editorHeader}>
-        <div>
-          {yUndoManager ? <Toolbar yUndoManager={yUndoManager} /> : null}
+    <>
+      <div className={styles.container}>
+        <div className={styles.editorHeader}>
+          <div>
+            {yUndoManager ? <Toolbar yUndoManager={yUndoManager} /> : null}
+          </div>
+          <button className="border-2 p-2 border-purple-400 bg-purple-400 text-white font-semibold rounded-lg hover:bg-white hover:text-purple-400"
+            onClick={async () => {
+              try {
+                await handleSubmitCode(text); // Await the promise here
+              } catch (error) {
+                console.error("Error submitting code:", error);
+              }
+            }}
+          >
+            {loading ? "Loading..." : "Run Code"}
+          </button>
+          <Avatars />
         </div>
-        <Avatars />
+        <div className="flex justify-center">
+          <div className={styles.editorContainer} style={{ width: leftWidth }} ref={ref}></div>
+          <div className="resizer hover:bg-blue-500 hover:text-blue-500 flex items-center justify-center text-xl font-bold text-gray-500 rounded-lg h-[85vh]" onMouseDown={handleMouseDown}>|</div>
+          <div className="bg-gray-900 w-1/2 rounded-lg h-[100vh] text-white p-4">:/sh</div>
+        </div>
       </div>
-      <div className={styles.editorContainer} ref={ref}></div>
-    </div>
+    </>
   );
 }
