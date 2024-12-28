@@ -10,7 +10,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@codemirror/lang-javascript": "^6.1.9",
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/lang-python": "^6.1.6",
     "@liveblocks/client": "^2.11.0",
     "@liveblocks/node": "^2.11.0",
     "@liveblocks/react": "^2.11.0",

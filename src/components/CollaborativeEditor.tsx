@@ -5,6 +5,7 @@ import { yCollab } from "y-codemirror.next";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
 import { useCallback, useEffect, useState } from "react";
 import { LiveblocksYjsProvider } from "@liveblocks/yjs";
 import { useRoom, useSelf } from "@liveblocks/react/suspense";
@@ -56,11 +57,11 @@ export function CollaborativeEditor() {
     };
   }, [isResizing]);
 
-  async function handleSubmitCode(code: string) {
+  async function handleSubmitCode(content: string) {
     try {
       // Replace with your API endpoint
       setLoading(true);
-      const apiUrl = "";
+      const apiUrl = "https://mini-python-playground.onrender.com/api/v1/run";
 
       // Send POST request using fetch
       const response = await fetch(apiUrl, {
@@ -69,7 +70,7 @@ export function CollaborativeEditor() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          code,
+          content,
         }),
       });
 
@@ -82,6 +83,7 @@ export function CollaborativeEditor() {
       const data = await response.json();
       console.log("API Response:", data);
       setOutput(data);
+      console.log(output);
     } catch (error) {
       console.error("Error sending code:", error);
       throw error;
@@ -130,6 +132,7 @@ export function CollaborativeEditor() {
       extensions: [
         basicSetup,
         javascript(),
+        python(),
         yCollab(ytext, provider.awareness, { undoManager }),
       ],
     });
