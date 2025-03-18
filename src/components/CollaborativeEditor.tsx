@@ -12,7 +12,7 @@ import { useRoom, useSelf } from "@liveblocks/react/suspense";
 import styles from "./CollaborativeEditor.module.css";
 import { Avatars } from "@/components/Avatars";
 import { Toolbar } from "@/components/Toolbar";
-import "./splitView.css"
+import "./splitView.css";
 
 // Collaborative code editor with undo/redo, live cursors, and live avatars
 export function CollaborativeEditor() {
@@ -20,10 +20,11 @@ export function CollaborativeEditor() {
   const room = useRoom();
   const [element, setElement] = useState<HTMLElement>();
   const [yUndoManager, setYUndoManager] = useState<Y.UndoManager>();
-  const [output, setOutput] = useState();
+  const [output, setOutput] = useState({output:"",stderr:"",time:0});
   const [loading, setLoading] = useState<boolean>(false);
   const [leftWidth, setLeftWidth] = useState(400); // Initial width of the left pane
   const [isResizing, setIsResizing] = useState(false);
+  const [language, setLanguage] = useState("javascript"); // Default language
 
   const handleMouseDown = () => {
     setIsResizing(true);
@@ -57,33 +58,30 @@ export function CollaborativeEditor() {
     };
   }, [isResizing]);
 
-  async function handleSubmitCode(content: string) {
+  async function handleSubmitCode(code: string, language: string) {
     try {
-      // Replace with your API endpoint
       setLoading(true);
-      const apiUrl = "https://mini-python-playground.onrender.com/api/v1/run";
-
-      // Send POST request using fetch
+      const apiUrl = "https://playground-backend-d9i0.onrender.com/api/v1/run";
+      // console.log(code,language);
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          content,
+          code,
+          language,
         }),
       });
-
-      // Check if response is OK
+  
       if (!response.ok) {
-        throw new Error("Failed to fetch API response.");
+        const errorData = await response.json(); // Parse error response
+        throw new Error(`API Error: ${errorData.message || response.statusText}`);
       }
-
-      // Parse and return the response JSON
+  
       const data = await response.json();
       console.log("API Response:", data);
       setOutput(data);
-      console.log(output);
     } catch (error) {
       console.error("Error sending code:", error);
       throw error;
@@ -92,10 +90,9 @@ export function CollaborativeEditor() {
     }
   }
 
-
   // Get user info from Liveblocks authentication endpoint
   const userInfo = useSelf((me) => me.info);
-  console.log(userInfo);
+  // console.log(userInfo);
 
   const ref = useCallback((node: HTMLElement | null) => {
     if (!node) return;
@@ -138,7 +135,6 @@ export function CollaborativeEditor() {
     });
     const handleDocChange = () => {
       const currentText = ytext.toString();
-      console.log("Current Text:", currentText); // Check console output//
       setText(currentText); // Update state
     };
 
@@ -164,10 +160,29 @@ export function CollaborativeEditor() {
           <div>
             {yUndoManager ? <Toolbar yUndoManager={yUndoManager} /> : null}
           </div>
-          <button className="border-2 p-2 border-purple-400 bg-purple-400 text-white font-semibold rounded-lg hover:bg-white hover:text-purple-400"
+
+          {/* Language Selector */}
+          <select
+            title="language"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="border-2 p-2 border-purple-400 bg-purple-400 text-white font-semibold rounded-lg hover:bg-white hover:text-purple-400 mr-2"
+          >
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="js">JavaScript</option>
+            <option value="go">Go</option>
+            {/* <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="rust">Rust</option> */}
+          </select>
+
+          {/* Run Code Button */}
+          <button
+            className="border-2 p-2 border-purple-400 bg-purple-400 text-white font-semibold rounded-lg hover:bg-white hover:text-purple-400"
             onClick={async () => {
               try {
-                await handleSubmitCode(text); // Await the promise here
+                await handleSubmitCode(text, language); // Pass the selected language
               } catch (error) {
                 console.error("Error submitting code:", error);
               }
@@ -177,10 +192,13 @@ export function CollaborativeEditor() {
           </button>
           <Avatars />
         </div>
-        <div className="flex justify-center">
+        <div className="flex flex-col md:flex-row lg:flex-row justify-center">
           <div className={styles.editorContainer} style={{ width: leftWidth }} ref={ref}></div>
           <div className="resizer hover:bg-blue-500 hover:text-blue-500 flex items-center justify-center text-xl font-bold text-gray-500 rounded-lg h-[85vh]" onMouseDown={handleMouseDown}>|</div>
-          <div className="bg-gray-900 w-1/2 rounded-lg h-[100vh] text-white p-4">:/sh</div>
+          <div className="bg-gray-900 w-1/2 rounded-lg h-[100vh] text-white p-4">:/sh
+          {output.output ? <div>{output.output}</div> : <div>{output.stderr}</div>}
+          <div className="text-center">{"----------"+output.time +"ms----------"}</div></div>
+          
         </div>
       </div>
     </>
