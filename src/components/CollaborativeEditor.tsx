@@ -172,8 +172,8 @@ export function CollaborativeEditor() {
             <option value="cpp">C++</option>
             <option value="js">JavaScript</option>
             <option value="go">Go</option>
-            {/* <option value="python">Python</option>
-            <option value="java">Java</option>
+            <option value="py">Python</option>
+            {/* <option value="java">Java</option>
             <option value="rust">Rust</option> */}
           </select>
 
