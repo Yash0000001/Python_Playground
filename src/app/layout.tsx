@@ -1,9 +1,17 @@
 import "../globals.css";
 import { Providers } from "./Providers";
+import { Inter } from 'next/font/google'
+import { Toaster } from "@/components/ui/toaster"
+import { Theme } from "@radix-ui/themes";
+import "@radix-ui/themes/styles.css"
+
 
 export const metadata = {
-  title: "Python_Playground",
+  title: 'CodeCollab - Real-time Collaborative Code Editor',
+  description: 'A powerful, real-time collaborative code editor with instant code execution.',
 };
+
+const inter = Inter({ subsets: ['latin'] })
 
 export default function RootLayout({
   children,
@@ -11,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <head>
         <link
           href="https://liveblocks.io/favicon-32x32.png"
@@ -26,8 +34,13 @@ export default function RootLayout({
           type="image/png"
         />
       </head>
-      <body>
-        <Providers>{children}</Providers>
+      <body className={inter.className}>
+
+        <Providers>
+          {children}
+            <Toaster />
+          
+        </Providers>
       </body>
     </html>
   );
